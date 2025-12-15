@@ -119,7 +119,7 @@ def iterative_meanshift_hdbscan(model, loader, args):
     # Initialize wandb run
     if args.wandb:
         wandb.init(
-            project="CMS-HDBSCAN",
+            project="hdbscan-test",
             name=f"{args.dataset_name}_mcs{args.min_cluster_size}_ms{args.min_samples}",
             config={
                 "dataset": args.dataset_name,
