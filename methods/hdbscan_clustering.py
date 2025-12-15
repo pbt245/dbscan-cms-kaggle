@@ -119,33 +119,49 @@ def iterative_meanshift_hdbscan(model, loader, args):
                 valid_mask = ~noise_mask
 
                 if valid_mask.sum() > 0:
-                    # Use HDBSCAN's membership probability if available
+                    # ==========================================
+                    # METHOD 1: Use HDBSCAN's approximate_predict
+                    # ==========================================
                     if hasattr(clustering, "probabilities_"):
-                        probs = clustering.probabilities_
-                        # For noise points (prob = 0), assign to nearest cluster
-                        for i in np.where(noise_mask)[0]:
-                            unique_labels = np.unique(preds[valid_mask])
-                            centroids = np.array(
-                                [
-                                    feats_np[preds == label].mean(axis=0)
-                                    for label in unique_labels
-                                ]
+                        try:
+                            # Get noise point indices and features
+                            noise_indices = np.where(noise_mask)[0]
+                            noise_features = feats_np[noise_mask]
+                            # Use HDBSCAN's built-in prediction (uses condensed tree structure)
+                            approximate_labels, strengths = hdbscan.approximate_predict(
+                                clustering, noise_features
                             )
-                            distances = np.linalg.norm(centroids - feats_np[i], axis=1)
-                            preds[i] = unique_labels[np.argmin(distances)]
-                    else:
-                        # Fallback to centroid-based assignment
-                        unique_labels = np.unique(preds[valid_mask])
-                        centroids = np.array(
-                            [
-                                feats_np[preds == label].mean(axis=0)
-                                for label in unique_labels
-                            ]
-                        )
+                            # Assign predictions to noise points
+                            preds[noise_indices] = approximate_labels
+                            print(f"  → Used HDBSCAN approximate_predict (avg confidence: {strengths.mean():.3f})")
 
-                        for i in np.where(noise_mask)[0]:
-                            distances = np.linalg.norm(centroids - feats_np[i], axis=1)
-                            preds[i] = unique_labels[np.argmin(distances)]
+                        except Exception as e:
+                            print(f"Approximate predict failed: {e}, using centroid-based assignment")
+                            # ==========================================
+                            # FALLBACK: Centroid-based assignment
+                            # ==========================================
+                            # Calculate unique labels and centroids ONCE (outside loop!)
+                            unique_labels = np.unique(preds[valid_mask])
+                            centroids = np.array([
+                                feats_np[preds == label].mean(axis=0) for label in unique_labels
+                            ])
+
+                            # Assign each noise point to nearest centroid
+                            for i in np.where(noise_mask)[0]:
+                                distances = np.linalg.norm(centroids - feats_np[i], axis=1)
+                                preds[i] = unique_labels[np.argmin(distances)]
+            else:
+                # ==========================================
+                # METHOD 2: Centroid-based assignment (when no probabilities available)
+                # ==========================================
+                print(f"  → Using centroid-based assignment")
+                unique_labels = np.unique(preds[valid_mask])
+                centroids = np.array(
+                [feats_np[preds == label].mean(axis=0) for label in unique_labels]
+            )
+                for i in np.where(noise_mask)[0]:
+                    distances = np.linalg.norm(centroids - feats_np[i], axis=1)
+                    preds[i] = unique_labels[np.argmin(distances)]
 
             # Remap labels to be contiguous (0, 1, 2, ...)
             unique_labels = np.unique(preds)
