@@ -594,7 +594,7 @@ def iterative_meanshift_hdbscan_inductive(model, loader, val_loader, args):
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="HDBSCAN clustering with mean-shift")
     parser.add_argument("--batch_size", default=128, type=int)
-    parser.add_argument("--num_workers", default=8, type=int)
+    parser.add_argument("--num_workers", default=8, type=int) # kaggle max =4
     parser.add_argument("--model_name", type=str, default="cifar100_best")
     parser.add_argument("--dataset_name", type=str, default="cifar100")
     parser.add_argument("--epochs", default=20, type=int)
