@@ -8,6 +8,7 @@ from torch.utils.data import DataLoader
 from hdbscan import HDBSCAN
 import hdbscan  # Need this for approximate_predict
 import wandb
+from config import CMS_ROOT
 
 from data.augmentations import get_transform
 from data.get_datasets import get_datasets, get_class_splits, get_datasets_with_gcdval
@@ -645,8 +646,11 @@ if __name__ == "__main__":
     print("=" * 80 + "\n")
 
     # Load model
-    model_path = (
-        f"./log/metric_learn_gcd/log/{args.model_name}/checkpoints/model_best.pt"
+    model_path = os.path.join(
+        CMS_ROOT,
+        "log/metric_learn_gcd/log",
+        args.model_name,
+        "checkpoints/model_best.pt",
     )
     print(f"Loading model from: {model_path}")
 

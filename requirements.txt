@@ -52,3 +52,4 @@ urllib3==2.1.0
 wandb==0.16.5
 Werkzeug==3.0.2
 wheel==0.41.2
+hdbscan>=0.8.33

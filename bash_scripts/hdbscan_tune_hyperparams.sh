@@ -1,22 +1,19 @@
 #!/bin/bash
-
 export CUDA_VISIBLE_DEVICES=0
 
-# Move into project root (important for correct paths)
-cd /kaggle/working/dbscan-for-cms
-export PYTHONPATH=$(pwd):$PYTHONPATH
-
+# Configuration
 DATASET="cifar100"
 MODEL="cifar100_best"
 
-# Grid search for min_cluster_size and min_samples
-mkdir -p log
+# Create log directory
+mkdir -p log/hdbscan_tuning
 
 echo "=== HDBSCAN Hyperparameter Search ==="
 echo "Dataset: $DATASET"
 echo "Model: $MODEL"
 echo ""
 
+# Grid search for min_cluster_size and min_samples
 # HDBSCAN uses min_cluster_size instead of eps
 # min_cluster_size: minimum size of clusters (typically 5-50)
 # min_samples: how conservative the clustering is (typically 1-10)
@@ -29,13 +26,20 @@ do
         echo "Testing min_cluster_size=$MIN_CLUSTER_SIZE, min_samples=$MIN_SAMPLES"
         echo "==========================================="
         
-        python methods/hdbscan_clustering.py \
+        python -m methods.hdbscan_clustering \
             --dataset_name $DATASET \
             --model_name $MODEL \
+            --batch_size 128 \
+            --num_workers 8 \
+            --epochs 10 \
+            --k 8 \
+            --alpha 0.5 \
             --min_cluster_size $MIN_CLUSTER_SIZE \
             --min_samples $MIN_SAMPLES \
-            --epochs 10 \
-            2>&1 | tee log/hdbscan_${DATASET}_mcs${MIN_CLUSTER_SIZE}_min${MIN_SAMPLES}.log
+            --eval_funcs v2 \
+            --use_ssb_splits True \
+            --wandb \
+            2>&1 | tee log/hdbscan_tuning/hdbscan_${DATASET}_mcs${MIN_CLUSTER_SIZE}_ms${MIN_SAMPLES}.log
         
         echo ""
         echo "Completed: min_cluster_size=$MIN_CLUSTER_SIZE, min_samples=$MIN_SAMPLES"
@@ -44,8 +48,8 @@ do
 done
 
 echo "=== All experiments completed ==="
-echo "Check log/ directory for results"
+echo "Check log/hdbscan_tuning/ directory for results"
 
 echo ""
 echo "=== Summary of Results ==="
-grep -h "Final Results" log/hdbscan_*.log
+grep -h "FINAL RESULTS" log/hdbscan_tuning/hdbscan_*.log
