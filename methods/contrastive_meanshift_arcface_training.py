@@ -461,7 +461,11 @@ if __name__ == "__main__":
     print(f"Using evaluation function {args.eval_funcs[0]} to print results")
 
     if args.wandb:
-        wandb.init(project="CMS-ArcFace")
+        os.environ["WANDB_WATCH"] = "all" 
+        wandb.init(
+            project="CMS-ArcFace",
+            settings=wandb.Settings(_disable_stats=False),
+        )
         wandb.config.update(args)
 
     print(f"\n{'='*80}")
