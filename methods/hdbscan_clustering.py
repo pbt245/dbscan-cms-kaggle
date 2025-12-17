@@ -15,6 +15,7 @@ from data.get_datasets import get_datasets, get_class_splits, get_datasets_with_
 from project_utils.cluster_and_log_utils import log_accs_from_preds
 from models.dino import DINO
 
+wandb.login(key="b264a66ddb02e3aab0297a18e30ce8cd996dc863")
 
 def reassign_noise_to_clusters(preds, feats_np, clustering, method="approximate"):
     """
@@ -120,7 +121,7 @@ def iterative_meanshift_hdbscan(model, loader, args):
     # Initialize wandb run
     if args.wandb:
         wandb.init(
-            project="hdbscan-test",
+            project="hdscan-cms",
             name=f"{args.dataset_name}_mcs{args.min_cluster_size}_ms{args.min_samples}",
             config={
                 "dataset": args.dataset_name,

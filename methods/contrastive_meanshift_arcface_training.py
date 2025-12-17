@@ -25,6 +25,7 @@ import warnings
 
 warnings.filterwarnings("ignore", category=DeprecationWarning)
 
+wandb.login(key="b264a66ddb02e3aab0297a18e30ce8cd996dc863")
 
 class ContrastiveLearningViewGenerator(object):
     """Take two random crops of one image as the query and key."""
