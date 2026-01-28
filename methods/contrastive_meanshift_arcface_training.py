@@ -277,12 +277,15 @@ def train(model, train_loader, test_loader, train_loader_memory, args):
                 arcface_loss = torch.tensor(0.0).to(device)
 
             # ==========================================
-            # Step 6: Total Loss
+            # Step 6: Total Loss (Normalized Weights)
             # ==========================================
+            total_weight = args.unsup_weight + args.sup_con_weight + args.arcface_weight
+            w_unsup = args.unsup_weight / total_weight
+            w_sup = args.sup_con_weight / total_weight
+            w_arc = args.arcface_weight / total_weight
+
             loss = (
-                (1 - args.sup_con_weight) * unsup_con_loss
-                + args.sup_con_weight * sup_con_loss
-                + args.arcface_weight * arcface_loss
+                w_unsup * unsup_con_loss + w_sup * sup_con_loss + w_arc * arcface_loss
             )
 
             # save losses
@@ -350,6 +353,11 @@ def train(model, train_loader, test_loader, train_loader_memory, args):
 
         if args.wandb:
             current_lr = optimizer.param_groups[0]["lr"]
+            total_weight = args.unsup_weight + args.sup_con_weight + args.arcface_weight
+            w_unsup = args.unsup_weight / total_weight
+            w_sup = args.sup_con_weight / total_weight
+            w_arc = args.arcface_weight / total_weight
+
             wandb.log(
                 {
                     "test/all": img_all_acc_test,
@@ -362,6 +370,9 @@ def train(model, train_loader, test_loader, train_loader_memory, args):
                     "loss/cms_sup": loss_cms_sup_record.avg,
                     "loss/arcface": loss_arc_record.avg,
                     "train/lr": current_lr,
+                    "weights/unsup_normalized": w_unsup,
+                    "weights/sup_normalized": w_sup,
+                    "weights/arcface_normalized": w_arc,
                 },
                 step=epoch,
             )
@@ -421,6 +432,12 @@ if __name__ == "__main__":
 
     # CMS hyperparameters
     parser.add_argument(
+        "--unsup_weight",
+        type=float,
+        default=0.35,
+        help="Weight for unsupervised contrastive loss",
+    )
+    parser.add_argument(
         "--sup_con_weight",
         type=float,
         default=0.35,
@@ -473,12 +490,18 @@ if __name__ == "__main__":
         )
         wandb.config.update(args)
 
+    total_weight = args.unsup_weight + args.sup_con_weight + args.arcface_weight
+    w_unsup = args.unsup_weight / total_weight
+    w_sup = args.sup_con_weight / total_weight
+    w_arc = args.arcface_weight / total_weight
+
     print(f"\n{'='*80}")
     print(f"CMS + ArcFace Configuration:")
     print(f"  Dataset: {args.dataset_name}")
     print(f"  Labeled classes: {args.num_labeled_classes}")
-    print(f"  CMS supervised weight (lambda_sup): {args.sup_con_weight}")
-    print(f"  ArcFace weight (lambda_arc): {args.arcface_weight}")
+    print(f"  CMS unsupervised weight: {args.unsup_weight} (normalized: {w_unsup:.3f})")
+    print(f"  CMS supervised weight: {args.sup_con_weight} (normalized: {w_sup:.3f})")
+    print(f"  ArcFace weight: {args.arcface_weight} (normalized: {w_arc:.3f})")
     print(f"  ArcFace scale (s): {args.arcface_s}")
     print(f"  ArcFace margin (m): {args.arcface_m}")
     print(f"{'='*80}\n")
