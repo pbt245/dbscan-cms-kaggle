@@ -27,6 +27,7 @@ warnings.filterwarnings("ignore", category=DeprecationWarning)
 
 wandb.login(key="b264a66ddb02e3aab0297a18e30ce8cd996dc863")
 
+
 class ContrastiveLearningViewGenerator(object):
     """Take two random crops of one image as the query and key."""
 
@@ -220,7 +221,9 @@ def train(model, train_loader, test_loader, train_loader_memory, args):
             # Compute kNN from memory bank
             # if batch_idx == 0:
             #     all_feats_gpu = all_feats.to(device)
-            classwise_sim = torch.einsum("b d, n d -> b n", features.cpu(), all_feats) # might be upgrade by remove .cpu()
+            classwise_sim = torch.einsum(
+                "b d, n d -> b n", features.cpu(), all_feats
+            )  # might be upgrade by remove .cpu()
             _, indices = classwise_sim.topk(
                 k=args.k + 1, dim=-1, largest=True, sorted=True
             )
@@ -346,6 +349,7 @@ def train(model, train_loader, test_loader, train_loader_memory, args):
         ) = test_agglo(epoch, all_feats_val, targets, mask, "Test/ACC", args)
 
         if args.wandb:
+            current_lr = optimizer.param_groups[0]["lr"]
             wandb.log(
                 {
                     "test/all": img_all_acc_test,
@@ -357,6 +361,7 @@ def train(model, train_loader, test_loader, train_loader_memory, args):
                     "loss/cms_unsup": loss_cms_unsup_record.avg,
                     "loss/cms_sup": loss_cms_sup_record.avg,
                     "loss/arcface": loss_arc_record.avg,
+                    "train/lr": current_lr,
                 },
                 step=epoch,
             )
@@ -461,7 +466,7 @@ if __name__ == "__main__":
     print(f"Using evaluation function {args.eval_funcs[0]} to print results")
 
     if args.wandb:
-        os.environ["WANDB_WATCH"] = "all" 
+        os.environ["WANDB_WATCH"] = "all"
         wandb.init(
             project="CMS-ArcFace",
             settings=wandb.Settings(_disable_stats=False),
